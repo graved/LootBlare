@@ -1,4 +1,4 @@
-# Loot Blare 1.3.0
+# Loot Blare 1.4.0
 
 This addon displays a pop-up frame showing items and rolls when a single uncommon+ item is linked in Raid Warning. Rolls are automatically sorted by type to streamline the master looter's workflow.
 
@@ -17,7 +17,14 @@ This addon displays a pop-up frame showing items and rolls when a single uncommo
   - **SR (Soft Reserve)**: Rolls from 1 to 101.
   - **MS (Main Spec)**: Rolls from 1 to 100.
   - **OS (Off Spec)**: Rolls from 1 to 99.
-  - **TM (Transmog)**: Rolls from 1 to 50.
+  - **TM (Transmog)**: Rolls from 1 to 98.
+
+- **Roll Cap Configuration**: You can configure the roll range caps (e.g. Transmog 50 instead of 98):
+  `/lb cap <sr|ms|os|tm> <max>`
+
+  Examples:
+  `/lb cap tm 98`
+  `/lb cap ms 100`
 
 - **Frame Duration**: By default, the frame stays on screen for `15 seconds`. Adjust this duration with:  
   `/lootblare 'time <number>` or `/lb 'time <number>`
@@ -41,6 +48,7 @@ Every time the master looter changes, the new master looter announces the roll t
 
 Changelog:
 
+- **1.4.0**: Configurable roll caps via `/lb cap <sr|ms|os|tm> <max>` (e.g. Transmog 50 instead of 98)
 - **1.3.0**: Removed inconsitent ML sharing process, only ML should be linking items in /rw anyway
 - **1.2.0**: Clearer visual indication of what rolls are being done. Separate display and loot timers.
 - **1.1.11**: Various changes

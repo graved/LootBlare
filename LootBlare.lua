@@ -22,8 +22,12 @@ local state = {
   rollMessages = {}, rollers = {}, isRolling = false, time_elapsed = 0,
   item_query = 0.5, times = 5, currentItem = nil,
   discover = CreateFrame("GameTooltip", "CustomTooltip1", UIParent, "GameTooltipTemplate"),
-  masterLooter = nil, srRollCap = 101, msRollCap = 100, osRollCap = 99, tmogRollCap = 50,
+  masterLooter = nil,
   MLRollDuration = 15, rollDuration = 15,
+  srRollCap = 101,
+  msRollCap = 100,
+  osRollCap = 99,
+  tmogRollCap = 98,
 }
 
 -- Caches
@@ -192,10 +196,10 @@ local function CreateItemRollFrame()
 
   -- Roll buttons
   local rollButtons = {
-    {text = "SR", tooltip = "Roll for Soft Reserve", cap = state.srRollCap},
-    {text = "MS", tooltip = "Roll for Main Spec", cap = state.msRollCap},
-    {text = "OS", tooltip = "Roll for Off Spec", cap = state.osRollCap},
-    {text = "TM", tooltip = "Roll for Transmog", cap = state.tmogRollCap}
+    {text = "SR", tooltip = "Roll for Soft Reserve", capKey = "srRollCap"},
+    {text = "MS", tooltip = "Roll for Main Spec", capKey = "msRollCap"},
+    {text = "OS", tooltip = "Roll for Off Spec", capKey = "osRollCap"},
+    {text = "TM", tooltip = "Roll for Transmog", capKey = "tmogRollCap"}
   }
 
   local panelWidth = frame:GetWidth()
@@ -203,7 +207,7 @@ local function CreateItemRollFrame()
 
   for i, btnData in ipairs(rollButtons) do
     local tooltip = btnData.tooltip
-    local cap = btnData.cap
+    local capKey = btnData.capKey
     local btn = CreateFrame("Button", nil, frame, UIParent)
     btn:SetWidth(BUTTON_WIDTH)
     btn:SetHeight(BUTTON_WIDTH)
@@ -220,12 +224,16 @@ local function CreateItemRollFrame()
     btn:SetScript("OnMouseUp", function() bg:SetVertexColor(0.4, 0.4, 0.4, 1) end)
     btn:SetScript("OnEnter", function()
       GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
-      GameTooltip:SetText(tooltip, nil, nil, nil, nil, true)
+      local cap = state[capKey] or 100
+      GameTooltip:SetText(tooltip .. " (1-" .. cap .. ")", nil, nil, nil, nil, true)
       bg:SetVertexColor(0.4, 0.4, 0.4, 1)
       GameTooltip:Show()
     end)
     btn:SetScript("OnLeave", function() bg:SetVertexColor(0.2, 0.2, 0.2, 1) GameTooltip:Hide() end)
-    btn:SetScript("OnClick", function() RandomRoll(1, cap) end)
+    btn:SetScript("OnClick", function()
+      local cap = state[capKey] or 100
+      RandomRoll(1, cap)
+    end)
   end
 
   -- Item icon and info
@@ -393,6 +401,18 @@ function itemRollFrame:ADDON_LOADED(addon)
   if addon ~= "LootBlare" then return end
   if FrameShownDuration == nil then FrameShownDuration = 15 end
   if FrameAutoClose == nil then FrameAutoClose = true end
+  if LootBlareRollCaps == nil then
+    LootBlareRollCaps = {
+      sr = state.srRollCap,
+      ms = state.msRollCap,
+      os = state.osRollCap,
+      tm = state.tmogRollCap,
+    }
+  end
+  state.srRollCap = tonumber(LootBlareRollCaps.sr) or state.srRollCap
+  state.msRollCap = tonumber(LootBlareRollCaps.ms) or state.msRollCap
+  state.osRollCap = tonumber(LootBlareRollCaps.os) or state.osRollCap
+  state.tmogRollCap = tonumber(LootBlareRollCaps.tm) or state.tmogRollCap
   state.MLRollDuration = FrameShownDuration
 end
 
@@ -413,9 +433,37 @@ SlashCmdList["LOOTBLARE"] = function(msg)
   msg = string.lower(msg)
   if msg == "help" or msg == "" then
     lb_print("LootBlare " .. GetAddOnMetadata("LootBlare", "Version") .. " displays sorted item rolls.")
-    lb_print("Commands: /lb time <seconds> | /lb autoclose on/off | /lb settings")
+    lb_print("Commands: /lb time <seconds> | /lb autoclose on/off | /lb cap <sr|ms|os|tm> <max> | /lb settings")
   elseif msg == "settings" then
     lb_print("Duration: " .. FrameShownDuration .. "s | Auto-close: " .. (FrameAutoClose and "on" or "off"))
+    lb_print("Caps: SR " .. state.srRollCap .. " | MS " .. state.msRollCap .. " | OS " .. state.osRollCap .. " | TM " .. state.tmogRollCap)
+  elseif string.find(msg, "^cap") then
+    local _, _, capType, capValue = string.find(msg, "cap (%a+) (%d+)")
+    capValue = tonumber(capValue)
+    if not capType or not capValue or capValue < 1 then
+      lb_print("Invalid cap. Use: /lb cap <sr|ms|os|tm> <max>")
+      return
+    end
+
+    if capType == "sr" then
+      state.srRollCap = capValue
+      LootBlareRollCaps.sr = capValue
+      lb_print("SR roll cap set to " .. capValue .. ".")
+    elseif capType == "ms" then
+      state.msRollCap = capValue
+      LootBlareRollCaps.ms = capValue
+      lb_print("MS roll cap set to " .. capValue .. ".")
+    elseif capType == "os" then
+      state.osRollCap = capValue
+      LootBlareRollCaps.os = capValue
+      lb_print("OS roll cap set to " .. capValue .. ".")
+    elseif capType == "tm" or capType == "tmog" or capType == "transmog" then
+      state.tmogRollCap = capValue
+      LootBlareRollCaps.tm = capValue
+      lb_print("TM roll cap set to " .. capValue .. ".")
+    else
+      lb_print("Invalid cap type. Use: sr, ms, os, tm")
+    end
   elseif string.find(msg, "time") then
     local _, _, newDuration = string.find(msg, "time (%d+)")
     newDuration = tonumber(newDuration)
